@@ -155,7 +155,9 @@ export function useAuth(): UseAuthReturn {
   const [wsUrl, setWsUrl] = useState<string | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   // PAT is intentionally held in component memory only; it is never persisted.
-  const [patToken, setPatToken] = useState<string | null>(null);
+  const [authMethod, setAuthMethod] = useState<'oauth' | 'pat' | null>(() =>
+    typeof window !== 'undefined' && getAuthInfo() ? 'oauth' : null
+  );
   const initRef = useRef(false);
   const activeAccountIdRef = useRef<string | null>(null);
   const tabHiddenAtRef = useRef<number | null>(null);
@@ -163,12 +165,12 @@ export function useAuth(): UseAuthReturn {
   // Fetch OTP WebSocket URL for an account
   const fetchOTPUrl = useCallback(
     async (accountId: string, authInfo?: AuthInfo): Promise<string> => {
-      if (patToken) {
+      if (authMethod === 'pat') {
         const response = await fetch('/api/deriv/pat/otp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           cache: 'no-store',
-          body: JSON.stringify({ token: patToken, accountId }),
+          body: JSON.stringify({ accountId }),
         });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || 'Could not authorize account');
@@ -177,7 +179,7 @@ export function useAuth(): UseAuthReturn {
       if (!authInfo) throw new Error('Please connect your Deriv account again.');
       return getWebSocketOTP(accountId, authInfo, getAuthConfig().clientId);
     },
-    [patToken]
+    [authMethod]
   );
 
   // Complete auth: fetch accounts → get OTP → set WS URL
@@ -198,6 +200,7 @@ export function useAuth(): UseAuthReturn {
         setWsUrl(otpUrl);
       }
 
+      setAuthMethod('oauth');
       setAuthState('authenticated');
     },
     [fetchOTPUrl]
@@ -297,6 +300,36 @@ export function useAuth(): UseAuthReturn {
             setAuthState('unauthenticated');
           }
         }
+      } else {
+        // Restore the encrypted HttpOnly PAT session without exposing the token to JavaScript.
+        try {
+          const response = await fetch('/api/deriv/pat/accounts', { method: 'GET', cache: 'no-store' });
+          if (!response.ok) return;
+          const payload = await response.json();
+          const restoredAccounts = (Array.isArray(payload.accounts) ? payload.accounts : []) as DerivAccount[];
+          if (!restoredAccounts.length) return;
+          const preferredId = getActiveLoginId();
+          const selected = restoredAccounts.find(account => account.account_id === preferredId) ??
+            restoredAccounts.find(account => account.account_type === 'demo') ?? restoredAccounts[0];
+          const otpResponse = await fetch('/api/deriv/pat/otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store',
+            body: JSON.stringify({ accountId: selected.account_id }),
+          });
+          const otpPayload = await otpResponse.json();
+          if (!otpResponse.ok) throw new Error(otpPayload.error || 'PAT session could not be restored.');
+          setAuthMethod('pat');
+          setAccounts(restoredAccounts);
+          storeDerivAccounts(restoredAccounts);
+          setActiveLoginId(selected.account_id);
+          setAccountType(selected.account_type);
+          setActiveAccountId(selected.account_id);
+          setWsUrl(otpPayload.url as string);
+          setAuthState('authenticated');
+        } catch {
+          setAuthMethod(null);
+        }
       }
     };
 
@@ -325,7 +358,7 @@ export function useAuth(): UseAuthReturn {
 
       const accountId = activeAccountIdRef.current;
       const authInfo = getAuthInfo();
-      if ((!authInfo && !patToken) || !accountId) return;
+      if ((!authInfo && authMethod !== 'pat') || !accountId) return;
 
       try {
         const otpUrl = await fetchOTPUrl(accountId, authInfo ?? undefined);
@@ -339,7 +372,7 @@ export function useAuth(): UseAuthReturn {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [authState, fetchOTPUrl, patToken]);
+  }, [authState, fetchOTPUrl, authMethod]);
 
   // Phase 1: Initiate login — includes partner attribution params, resolving a
   // fresh per-user Scaleo token via the BFF proxy when needed (non-blocking).
@@ -376,11 +409,11 @@ export function useAuth(): UseAuthReturn {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         cache: 'no-store',
-        body: JSON.stringify({ token: cleanToken, accountId: selected.account_id }),
+        body: JSON.stringify({ accountId: selected.account_id }),
       });
       const otpPayload = await otpResponse.json();
       if (!otpResponse.ok) throw new Error(otpPayload.error || 'Could not connect to the selected account.');
-      setPatToken(cleanToken);
+      setAuthMethod('pat');
       setAccounts(fetchedAccounts);
       storeDerivAccounts(fetchedAccounts);
       setActiveLoginId(selected.account_id);
@@ -389,6 +422,7 @@ export function useAuth(): UseAuthReturn {
       setWsUrl(otpPayload.url as string);
       setAuthState('authenticated');
     } catch (err) {
+      await fetch('/api/deriv/pat/session', { method: 'DELETE', cache: 'no-store' }).catch(() => undefined);
       setError(err instanceof Error ? err.message : 'PAT connection failed.');
       setAuthState('error');
       throw err;
@@ -397,7 +431,8 @@ export function useAuth(): UseAuthReturn {
 
   // Logout: close WS (handled by useDerivWS cleanup), clear storage, reset state
   const logout = useCallback(() => {
-    setPatToken(null);
+    setAuthMethod(null);
+    void fetch('/api/deriv/pat/session', { method: 'DELETE', cache: 'no-store' }).catch(() => undefined);
     coreLogout();
     setAccounts([]);
     setActiveAccountId(null);
@@ -411,7 +446,7 @@ export function useAuth(): UseAuthReturn {
   const switchAccount = useCallback(
     async (accountId: string) => {
       const authInfo = getAuthInfo();
-      if (!authInfo && !patToken) return;
+      if (!authInfo && authMethod !== 'pat') return;
 
       try {
         const account = accounts.find(a => a.account_id === accountId);
@@ -425,7 +460,7 @@ export function useAuth(): UseAuthReturn {
         setError(err instanceof Error ? err.message : 'Account switch failed');
       }
     },
-    [fetchOTPUrl, accounts, patToken]
+    [fetchOTPUrl, accounts, authMethod]
   );
 
   // Keep the account snapshot and its persisted fallback synchronized with
