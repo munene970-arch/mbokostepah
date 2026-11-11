@@ -47,7 +47,7 @@ For local development, copy `.env.production` to `.env.local` — Next.js will l
 
 ## PAT login (Demo and Live accounts)
 
-The header includes **Connect PAT**. The app validates the token through a same-origin server route, retrieves the user's Options accounts, and starts with Demo selected when available. The account switcher can then select a Demo or Real account. The PAT is encrypted into an HttpOnly, Secure (production), SameSite cookie and is never stored in localStorage or exposed to the trading UI. The cookie expires after eight hours; Log out clears it.
+The header includes **Connect PAT**. The app validates the token through a same-origin server route, retrieves the user's Options accounts, and starts with Demo selected when available. The account switcher can then select a Demo or Real account. Selecting or reconnecting a Real account requires explicit confirmation. The PAT is encrypted into an HttpOnly, Secure (production), SameSite cookie and is never stored in localStorage or exposed to the trading UI. The cookie expires after eight hours; Log out clears it.
 
 Configure these server environment variables in Netlify before using PAT login:
 
