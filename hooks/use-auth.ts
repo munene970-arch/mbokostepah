@@ -450,6 +450,10 @@ export function useAuth(): UseAuthReturn {
 
       try {
         const account = accounts.find(a => a.account_id === accountId);
+        if (account?.account_type === 'real' && typeof window !== 'undefined') {
+          const confirmed = window.confirm('You are switching to a REAL account. Trades will use real money. Continue?');
+          if (!confirmed) return;
+        }
         if (account) setAccountType(account.account_type);
         // Fetch OTP before updating accountId so reconnectKey and url are consistent
         const otpUrl = await fetchOTPUrl(accountId, authInfo ?? undefined);
