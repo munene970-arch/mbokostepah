@@ -21,10 +21,8 @@ interface HeaderProps {
   onLogin: () => Promise<void>;
   onLogout: () => void;
   onSwitchAccount: (accountId: string) => Promise<void>;
-  onConnectPAT: (token: string) => Promise<void>;
   /** When provided, a Sign up button is rendered to the right of the Log in button. */
   onSignUp?: () => Promise<void>;
-  onConnectPAT: (token: string) => Promise<void>;
   /** Logo source URL or data URL. When omitted, a placeholder badge is shown until
    *  the user provides a logo via the app builder (passed as a data URL via PREVIEW_BRANDING). */
   logoSrc?: string;
@@ -81,7 +79,7 @@ function AuthButtons({
   onLogin: () => Promise<void>;
   onLogout: () => void;
   onSignUp?: () => Promise<void>;
-  onConnectPAT: (token: string) => Promise<void>;
+  onConnectPAT: () => void;
 }) {
   if (isAuthenticated) {
     return (
@@ -105,7 +103,7 @@ function AuthButtons({
           <Localize i18n_default_text="Sign up" />
         </Button>
       )}
-      <Button variant="ghost" size="sm" onClick={() => onConnectPAT('')} disabled={isAuthenticating}>
+      <Button variant="ghost" size="sm" onClick={onConnectPAT} disabled={isAuthenticating}>
         <Localize i18n_default_text="Connect PAT" />
       </Button>
     </div>
