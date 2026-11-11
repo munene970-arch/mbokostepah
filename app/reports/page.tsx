@@ -40,7 +40,7 @@ export default function ReportsPage() {
   const router = useRouter();
   const { localize } = useAppTranslations();
   const { ws, isConnected, isExhausted, auth } = useDerivWSContext();
-  const { authState, accounts, activeAccount, login, signUp, logout, switchAccount } = auth;
+  const { authState, accounts, activeAccount, login, signUp, logout, switchAccount, connectWithPAT } = auth;
   const trading = useDigitsTrading({ ws, isConnected, isExhausted, isAuthenticated: !!auth.wsUrl, onAuthWSFailed: logout });
   const digitContractLabels = getDigitContractLabels(localize);
 
@@ -68,6 +68,7 @@ export default function ReportsPage() {
         onSignUp={signUp}
         onLogout={logout}
         onSwitchAccount={switchAccount}
+        onConnectPAT={connectWithPAT}
         logoSrc={logoSrc}
         actions={<ThemeToggle />}
       />
