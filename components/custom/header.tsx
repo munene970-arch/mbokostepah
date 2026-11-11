@@ -426,7 +426,7 @@ export function Header({
           <form onSubmit={submitPAT} className="w-full max-w-md space-y-4 rounded-xl border bg-background p-5 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="pat-title">
             <div className="space-y-1">
               <h2 id="pat-title" className="text-lg font-semibold">Connect Deriv with PAT</h2>
-              <p className="text-sm text-muted-foreground">Paste your Personal Access Token. It is encrypted into a secure HttpOnly session cookie and is not saved in browser storage or the repository.</p>
+              <p className="text-sm text-muted-foreground">Paste your Personal Access Token. It is encrypted into a secure HttpOnly cookie; page scripts cannot read it, and it is never written to localStorage or the repository.</p>
             </div>
             <input autoFocus type="password" autoComplete="off" value={patValue} onChange={event => setPatValue(event.target.value)} placeholder="Deriv Personal Access Token" className="h-11 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring" required />
             {patError && <p className="text-sm text-destructive">{patError}</p>}
