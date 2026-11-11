@@ -45,6 +45,17 @@ NEXT_PUBLIC_DERIV_ENV=production
 
 For local development, copy `.env.production` to `.env.local` — Next.js will load `.env.local` automatically and it takes precedence over `.env.production`.
 
+## PAT login (Demo and Live accounts)
+
+The header includes **Connect PAT**. The app validates the token through a same-origin server route, retrieves the user's Options accounts, and starts with Demo selected when available. The account switcher can then select a Demo or Real account. The PAT is encrypted into an HttpOnly, Secure (production), SameSite cookie and is never stored in localStorage or exposed to the trading UI. The cookie expires after eight hours; Log out clears it.
+
+Configure these server environment variables in Netlify before using PAT login:
+
+- `DERIV_APP_ID`: your new Deriv App ID (server-side).
+- `DERIV_PAT_SESSION_SECRET`: a private random secret of at least 32 characters. Generate a unique value and keep it out of GitHub and client-side `NEXT_PUBLIC_*` variables.
+
+The existing `NEXT_PUBLIC_DERIV_APP_ID` remains available for the OAuth flow. Never commit a PAT or the session secret to the repository.
+
 ## Step 3: Local Development
 
 ```bash
