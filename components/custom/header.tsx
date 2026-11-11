@@ -213,7 +213,7 @@ function MobileAuthButtons({
   onLogin: () => Promise<void>;
   onLogout: () => void;
   onSignUp?: () => Promise<void>;
-  onConnectPAT: (token: string) => Promise<void>;
+  onConnectPAT: () => void;
 }) {
   const className = 'w-full h-11 font-semibold';
 
@@ -245,7 +245,7 @@ function MobileAuthButtons({
           <Localize i18n_default_text="Sign up" />
         </Button>
       )}
-      <Button variant="ghost" className={className} onClick={() => onConnectPAT('')} disabled={isAuthenticating}>
+      <Button variant="ghost" className={className} onClick={onConnectPAT} disabled={isAuthenticating}>
         <Localize i18n_default_text="Connect with PAT" />
       </Button>
     </>
