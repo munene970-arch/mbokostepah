@@ -191,7 +191,12 @@ export function useAuth(): UseAuthReturn {
       if (fetchedAccounts.length > 0) {
         const selectedAccount =
           fetchedAccounts.find(account => account.account_id === preferredAccountId) ??
+          fetchedAccounts.find(account => account.account_type === 'demo') ??
           fetchedAccounts[0];
+        if (selectedAccount.account_type === 'real' && typeof window !== 'undefined') {
+          const confirmed = window.confirm('You are connecting to a REAL account. Trades will use real money. Continue?');
+          if (!confirmed) throw new Error('Live account connection cancelled.');
+        }
         setActiveLoginId(selectedAccount.account_id);
         setAccountType(selectedAccount.account_type);
         setActiveAccountId(selectedAccount.account_id);
@@ -311,6 +316,10 @@ export function useAuth(): UseAuthReturn {
           const preferredId = getActiveLoginId();
           const selected = restoredAccounts.find(account => account.account_id === preferredId) ??
             restoredAccounts.find(account => account.account_type === 'demo') ?? restoredAccounts[0];
+          if (selected.account_type === 'real' && typeof window !== 'undefined') {
+            const confirmed = window.confirm('You are reconnecting to a REAL account. Trades will use real money. Continue?');
+            if (!confirmed) return;
+          }
           const otpResponse = await fetch('/api/deriv/pat/otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -405,6 +414,10 @@ export function useAuth(): UseAuthReturn {
       const fetchedAccounts = (Array.isArray(payload.accounts) ? payload.accounts : []) as DerivAccount[];
       if (!fetchedAccounts.length) throw new Error('No Options trading accounts were found for this PAT.');
       const selected = fetchedAccounts.find(account => account.account_type === 'demo') ?? fetchedAccounts[0];
+      if (selected.account_type === 'real' && typeof window !== 'undefined') {
+        const confirmed = window.confirm('You only have a REAL account available. Trades will use real money. Continue?');
+        if (!confirmed) throw new Error('Live account connection cancelled.');
+      }
       const otpResponse = await fetch('/api/deriv/pat/otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
