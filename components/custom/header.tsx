@@ -21,8 +21,10 @@ interface HeaderProps {
   onLogin: () => Promise<void>;
   onLogout: () => void;
   onSwitchAccount: (accountId: string) => Promise<void>;
+  onConnectPAT: (token: string) => Promise<void>;
   /** When provided, a Sign up button is rendered to the right of the Log in button. */
   onSignUp?: () => Promise<void>;
+  onConnectPAT: (token: string) => Promise<void>;
   /** Logo source URL or data URL. When omitted, a placeholder badge is shown until
    *  the user provides a logo via the app builder (passed as a data URL via PREVIEW_BRANDING). */
   logoSrc?: string;
@@ -72,12 +74,14 @@ function AuthButtons({
   onLogin,
   onLogout,
   onSignUp,
+  onConnectPAT,
 }: {
   isAuthenticated: boolean;
   isAuthenticating: boolean;
   onLogin: () => Promise<void>;
   onLogout: () => void;
   onSignUp?: () => Promise<void>;
+  onConnectPAT: (token: string) => Promise<void>;
 }) {
   if (isAuthenticated) {
     return (
@@ -101,6 +105,9 @@ function AuthButtons({
           <Localize i18n_default_text="Sign up" />
         </Button>
       )}
+      <Button variant="ghost" size="sm" onClick={() => onConnectPAT('')} disabled={isAuthenticating}>
+        <Localize i18n_default_text="Connect PAT" />
+      </Button>
     </div>
   );
 }
@@ -200,12 +207,14 @@ function MobileAuthButtons({
   onLogin,
   onLogout,
   onSignUp,
+  onConnectPAT,
 }: {
   isAuthenticated: boolean;
   isAuthenticating: boolean;
   onLogin: () => Promise<void>;
   onLogout: () => void;
   onSignUp?: () => Promise<void>;
+  onConnectPAT: (token: string) => Promise<void>;
 }) {
   const className = 'w-full h-11 font-semibold';
 
@@ -237,6 +246,9 @@ function MobileAuthButtons({
           <Localize i18n_default_text="Sign up" />
         </Button>
       )}
+      <Button variant="ghost" className={className} onClick={() => onConnectPAT('')} disabled={isAuthenticating}>
+        <Localize i18n_default_text="Connect with PAT" />
+      </Button>
     </>
   );
 }
@@ -249,6 +261,7 @@ export function Header({
   onLogout,
   onSwitchAccount,
   onSignUp,
+  onConnectPAT,
   logoSrc,
   appName,
   showAppName,
@@ -263,6 +276,25 @@ export function Header({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const [menuTop, setMenuTop] = useState(0);
+  const [patDialogOpen, setPatDialogOpen] = useState(false);
+  const [patValue, setPatValue] = useState('');
+  const [patBusy, setPatBusy] = useState(false);
+  const [patError, setPatError] = useState<string | null>(null);
+  const openPATDialog = () => setPatDialogOpen(true);
+  const submitPAT = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setPatBusy(true);
+    setPatError(null);
+    try {
+      await onConnectPAT(patValue);
+      setPatValue('');
+      setPatDialogOpen(false);
+    } catch (err) {
+      setPatError(err instanceof Error ? err.message : 'Could not connect PAT.');
+    } finally {
+      setPatBusy(false);
+    }
+  };
   const isAuthenticated = authState === 'authenticated';
   const isAuthenticating = authState === 'authenticating';
 
@@ -369,6 +401,7 @@ export function Header({
             onLogin={onLogin}
             onLogout={onLogout}
             onSignUp={onSignUp}
+            onConnectPAT={openPATDialog}
           />
         </div>
         <DialogPrimitive.Trigger asChild>
@@ -389,6 +422,22 @@ export function Header({
     <DialogPrimitive.Root modal={false} open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
       {/* modal=false keeps the header X and portaled popovers interactive */}
       {headerBar}
+      {patDialogOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4" role="presentation">
+          <form onSubmit={submitPAT} className="w-full max-w-md space-y-4 rounded-xl border bg-background p-5 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="pat-title">
+            <div className="space-y-1">
+              <h2 id="pat-title" className="text-lg font-semibold">Connect Deriv with PAT</h2>
+              <p className="text-sm text-muted-foreground">Paste your Personal Access Token. It is kept in memory for this session and is not saved in your browser or repository.</p>
+            </div>
+            <input autoFocus type="password" autoComplete="off" value={patValue} onChange={event => setPatValue(event.target.value)} placeholder="Deriv Personal Access Token" className="h-11 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring" required />
+            {patError && <p className="text-sm text-destructive">{patError}</p>}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => { setPatDialogOpen(false); setPatValue(''); setPatError(null); }}>Cancel</Button>
+              <Button type="submit" disabled={patBusy || !patValue.trim()}>{patBusy ? 'Connecting…' : 'Connect'}</Button>
+            </div>
+          </form>
+        </div>
+      )}
       {/* Portal to body: Content is position:fixed z-[100], but a class z-index is
           trapped in the edit-mode `sticky z-50` wrapper, so chart FixedZones at
           z-[60] still steal Appearance/Language clicks ("Gráfico · no editable"). */}
@@ -429,6 +478,7 @@ export function Header({
               onLogout();
             }}
             onSignUp={onSignUp}
+            onConnectPAT={openPATDialog}
           />
         </div>
       </DialogPrimitive.Content>
