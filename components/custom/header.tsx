@@ -21,6 +21,7 @@ interface HeaderProps {
   onLogin: () => Promise<void>;
   onLogout: () => void;
   onSwitchAccount: (accountId: string) => Promise<void>;
+  onConnectPAT: (token: string) => Promise<void>;
   /** When provided, a Sign up button is rendered to the right of the Log in button. */
   onSignUp?: () => Promise<void>;
   /** Logo source URL or data URL. When omitted, a placeholder badge is shown until
