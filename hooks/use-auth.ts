@@ -142,7 +142,7 @@ export interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   const { currentLang } = useAppTranslations();
   const [authState, setAuthState] = useState<AuthState>(() =>
-    typeof window !== 'undefined' && getAuthInfo() ? 'authenticated' : 'unauthenticated'
+    typeof window !== 'undefined' && getAuthInfo() ? 'authenticated' : 'authenticating'
   );
   const [accounts, setAccounts] = useState<DerivAccount[]>(() => {
     if (typeof window === 'undefined') return [];
@@ -309,16 +309,25 @@ export function useAuth(): UseAuthReturn {
         // Restore the encrypted HttpOnly PAT session without exposing the token to JavaScript.
         try {
           const response = await fetch('/api/deriv/pat/accounts', { method: 'GET', cache: 'no-store' });
-          if (!response.ok) return;
+          if (!response.ok) {
+            setAuthState('unauthenticated');
+            return;
+          }
           const payload = await response.json();
           const restoredAccounts = (Array.isArray(payload.accounts) ? payload.accounts : []) as DerivAccount[];
-          if (!restoredAccounts.length) return;
+          if (!restoredAccounts.length) {
+            setAuthState('unauthenticated');
+            return;
+          }
           const preferredId = getActiveLoginId();
           const selected = restoredAccounts.find(account => account.account_id === preferredId) ??
             restoredAccounts.find(account => account.account_type === 'demo') ?? restoredAccounts[0];
           if (selected.account_type === 'real' && typeof window !== 'undefined') {
             const confirmed = window.confirm('You are reconnecting to a REAL account. Trades will use real money. Continue?');
-            if (!confirmed) return;
+            if (!confirmed) {
+              setAuthState('unauthenticated');
+              return;
+            }
           }
           const otpResponse = await fetch('/api/deriv/pat/otp', {
             method: 'POST',
@@ -338,6 +347,7 @@ export function useAuth(): UseAuthReturn {
           setAuthState('authenticated');
         } catch {
           setAuthMethod(null);
+          setAuthState('unauthenticated');
         }
       }
     };
