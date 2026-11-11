@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
 
-export const DERIV_PAT_COOKIE = '__Host-deriv_pat_session';
+export const DERIV_PAT_COOKIE = 'deriv_pat_session';
 export const DERIV_PAT_SESSION_SECONDS = 8 * 60 * 60;
 
 function encryptionKey(): Buffer {
