@@ -43,6 +43,9 @@ export async function POST(request: NextRequest) {
     if ((process.env.DERIV_PAT_SESSION_SECRET || '').length < 32) {
       return NextResponse.json({ error: 'PAT login is not configured yet. Add DERIV_PAT_SESSION_SECRET in Netlify environment variables.' }, { status: 500 });
     }
+    if (!appId()) {
+      return NextResponse.json({ error: 'Set DERIV_APP_ID in Netlify environment variables.' }, { status: 500 });
+    }
     const accounts = await getAccounts(token);
     if (!accounts.length) {
       return NextResponse.json({ error: 'No Options trading accounts were found for this PAT.' }, { status: 404 });
