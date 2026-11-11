@@ -386,8 +386,8 @@ export function useAuth(): UseAuthReturn {
     await initiateSignUp(await getAuthConfigWithReferral(currentLang));
   }, [currentLang]);
 
-  // Connect with a PAT. The token is sent only to same-origin server routes and
-  // remains in memory for account switching; a page refresh requires re-entry.
+  // Connect with a PAT. The server encrypts it into an HttpOnly session cookie;
+  // client-side code never stores or reads the PAT after this request.
   const connectWithPAT = useCallback(async (token: string) => {
     const cleanToken = token.trim();
     if (!cleanToken) throw new Error('Enter your Deriv PAT.');
