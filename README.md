@@ -71,4 +71,4 @@ The app is available at `http://localhost:3000`.
 npm run build
 ```
 
-This produces a fully static export in the `/out` directory. Serve the contents of `/out` from any web server or static file host.
+This builds the Next.js application. Deploy it with the Netlify Next.js plugin configured in `netlify.toml`. The PAT authentication routes run server-side, so do not deploy only the `/out` folder to a static-only host.
