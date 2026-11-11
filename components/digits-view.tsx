@@ -70,6 +70,7 @@ export interface DigitsViewProps {
   onSignUp: () => Promise<void>;
   onLogout: () => void;
   onSwitchAccount: (accountId: string) => Promise<void>;
+  onConnectPAT: (token: string) => Promise<void>;
 
   // Connection / loading
   isConnected: boolean;
@@ -135,6 +136,7 @@ export function DigitsView({
   onSignUp,
   onLogout,
   onSwitchAccount,
+  onConnectPAT,
   isConnected,
   isLoading,
   error,
@@ -254,6 +256,7 @@ export function DigitsView({
         onSignUp={editMode ? noopAsync : onSignUp}
         onLogout={editMode ? noop : onLogout}
         onSwitchAccount={editMode ? noopAsync : onSwitchAccount}
+        onConnectPAT={editMode ? noopAsync : onConnectPAT}
         logoSrc={logoSrc}
         appName={appName}
         showAppName={showAppName}
@@ -269,6 +272,7 @@ export function DigitsView({
     onSignUp,
     onLogout,
     onSwitchAccount,
+    onConnectPAT,
     logoSrc,
     appName,
     showAppName,
